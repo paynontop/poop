@@ -4,7 +4,7 @@ import asyncio
 import os
 
 #TOKEN = "MTE4NzM0NzgzODYxMTUwNTI1NA.GGJQ_2.AyimzDJBg3vGIqjIlMiNer3TWVQz_--3oq2GIQ"  # Replace this with your Discord token
-TOKEN = "MTI5MTEyNjAyOTY5OTUxODU1NQ.Gi3duF.Zw2ggTeDDPHEHyZWBx2kiIIvr7my8YKPXcukyk"
+TOKEN = "MTI5MTEyNjAyOTY5OTUxODU1NQ.G6bsgP.AIwxrvfm3p0m6QkH8iuEjXtdWd58AiWMRga0YE"
 bot = commands.Bot(command_prefix="-", self_bot=True)
 
 @bot.event
