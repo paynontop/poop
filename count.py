@@ -34,7 +34,7 @@ def create_bot(token):
             await asyncio.sleep(1)
 
         # Countdown completed normally
-        await ctx.send("haha gotcha")
+        await ctx.send("You just got raped by your papa Vanai! WOW STAPHA! did stapha get raped by his father? UwU OwO UnU OnO goood BITCH! LOL!")
         bot.counting_channels.pop(ctx.channel.id, None)
 
     @bot.event
