@@ -2,9 +2,16 @@ import discord
 from discord.ext import commands
 import asyncio
 import os
+from dotenv import load_dotenv
+import os
 
-#TOKEN = "MTE4NzM0NzgzODYxMTUwNTI1NA.GGJQ_2.AyimzDJBg3vGIqjIlMiNer3TWVQz_--3oq2GIQ"  # Replace this with your Discord token
-TOKEN = "MTI5MTEyNjAyOTY5OTUxODU1NQ.GeLWbJ.WvRLozesdjac5GOvu2h27z1Dscz3kf-hi2YCL4"
+# Load the .env file
+load_dotenv()
+
+# Get the token
+token = os.getenv("DISCORD_TOKEN")
+
+
 bot = commands.Bot(command_prefix="-", self_bot=True)
 
 @bot.event
@@ -22,4 +29,4 @@ async def count(ctx, start: int):
         await ctx.send(str(i))
         await asyncio.sleep(1)
 
-bot.run(TOKEN)
+bot.run(token)
