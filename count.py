@@ -4,6 +4,8 @@ import asyncio
 import os
 from dotenv import load_dotenv
 
+
+stop = 0
 # Load tokens from .env
 load_dotenv()
 tokens = os.getenv("TOKENS").split(",")
@@ -21,6 +23,8 @@ def create_bot(token):
     @bot.command()
     async def count(ctx, start: int):
         try:
+            global stop
+            stop = 0
             await ctx.message.delete()
         except discord.Forbidden:
             pass
@@ -39,17 +43,19 @@ def create_bot(token):
 
     @bot.event
     async def on_message(message):
+        global stop
         # Let command handlers run
         await bot.process_commands(message)
-
+        
         # If someone else types during countdown
         if (
             message.channel.id in bot.counting_channels
-            and message.author.id != bot.user.id
+            and message.author.id != bot.user.id and stop != 1
         ):
             # Interrupt the countdown
             bot.counting_channels[message.channel.id] = False
             try:
+                stop = 1
                 await message.channel.send("AWW! did Mustapha Ahmady waste his time to stop vanais countdown??? GOOD SPLENDID BOOTY BITCH.. XD hahaha UwU OwO OnO Good slut stapha! let me eat those fat cheeks of yours fatso! hahaha!")
             except discord.Forbidden:
                 pass
