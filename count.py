@@ -285,38 +285,42 @@ def create_bot(token):
                     print(f"[{bot.user}] Received -stop and halted spam in {message.channel.id}")
         if isinstance(message.channel, discord.GroupChannel):
             if message.content.strip() == "-join":
-                try:
-                    payload = {
-                        "op": 4,
-                        "d": {
-                            "guild_id": None,
-                            "channel_id": str(message.channel.id),
-                            "self_mute": False,
-                            "self_deaf": False
-                        }
-                    }
-                    await bot.ws.send(json.dumps(payload))
-                    bot.active_voice_channels.add(message.channel.id)
-                    print(f"[{bot.user}] Auto-joined group call in {message.channel.id}")
-                except Exception as e:
-                    print(f"[{bot.user}] Error auto-joining group call: {e}")
-            elif message.content.strip() == "-leave":
-                try:
-                    if message.channel.id in bot.active_voice_channels:
+                if message.author.id in ALLOWED_USER_IDS:
+                    try:
                         payload = {
                             "op": 4,
                             "d": {
                                 "guild_id": None,
-                                "channel_id": None,
+                                "channel_id": str(message.channel.id),
                                 "self_mute": False,
                                 "self_deaf": False
                             }
                         }
                         await bot.ws.send(json.dumps(payload))
-                        bot.active_voice_channels.remove(message.channel.id)
-                        print(f"[{bot.user}] Auto-left group call in {message.channel.id}")
-                except Exception as e:
-                    print(f"[{bot.user}] Error auto-leaving group call: {e}")
+                        bot.active_voice_channels.add(message.channel.id)
+                        print(f"[{bot.user}] Auto-joined group call in {message.channel.id}")
+                    except Exception as e:
+                        print(f"[{bot.user}] Error auto-joining group call: {e}")
+            elif message.content.strip() == "-leave":
+                if message.author.id in ALLOWED_USER_IDS:
+                    try:
+                        if message.channel.id in bot.active_voice_channels:
+                            payload = {
+                                "op": 4,
+                                "d": {
+                                    "guild_id": None,
+                                    "channel_id": None,
+                                    "self_mute": False,
+                                    "self_deaf": False
+                                }
+                            }
+                            await bot.ws.send(json.dumps(payload))
+                            bot.active_voice_channels.remove(message.channel.id)
+                            print(f"[{bot.user}] Auto-left group call in {message.channel.id}")
+                    except Exception as e:
+                        print(f"[{bot.user}] Error auto-leaving group call: {e}")
+        if message.author.id == bot.user.id or message.author.id in BLACKLIST:
+            return
         if message.author.id == bot.user.id or message.author.id in BLACKLIST:
             return
 
