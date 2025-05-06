@@ -96,6 +96,8 @@ def create_bot(token):
     async def join(ctx):
         if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
             return
+        if ctx.author.id not in ALLOWED_USER_IDS:
+            return
 
         try:
             await ctx.message.delete()
@@ -122,6 +124,8 @@ def create_bot(token):
     @bot.command()
     async def leave(ctx):
         if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+            return
+        if ctx.author.id not in ALLOWED_USER_IDS:
             return
 
         try:
