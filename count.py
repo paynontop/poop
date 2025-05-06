@@ -90,6 +90,125 @@ def create_bot(token):
         else:
             print(f"[{bot.user}] Skipped -call, already in progress.")
 
+    bot.active_voice_channels = set()
+
+    @bot.command()
+    async def join(ctx):
+        if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+            return
+
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+
+        # Join voice by sending OP 4
+        try:
+            payload = {
+                "op": 4,
+                "d": {
+                    "guild_id": None,
+                    "channel_id": str(ctx.channel.id),
+                    "self_mute": False,
+                    "self_deaf": False
+                }
+            }
+            await bot.ws.send(json.dumps(payload))
+            bot.active_voice_channels.add(ctx.channel.id)
+            print(f"[{bot.user}] Joined voice in {ctx.channel.id}")
+        except Exception as e:
+            print(f"[{bot.user}] Error joining voice: {e}")
+
+    @bot.command()
+    async def leave(ctx):
+        if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+            return
+
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+
+        # Leave voice
+        try:
+            if ctx.channel.id in bot.active_voice_channels:
+                payload = {
+                    "op": 4,
+                    "d": {
+                        "guild_id": None,
+                        "channel_id": None,
+                        "self_mute": False,
+                        "self_deaf": False
+                    }
+                }
+                await bot.ws.send(json.dumps(payload))
+                bot.active_voice_channels.remove(ctx.channel.id)
+                print(f"[{bot.user}] Left voice in {ctx.channel.id}")
+        except Exception as e:
+            print(f"[{bot.user}] Error leaving voice: {e}")
+    bot.spamming_channels = set()
+
+    @bot.command()
+    async def spam(ctx, amount: int, *, msg: str):
+        if ctx.author.id not in ALLOWED_USER_IDS:
+            return
+
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+
+        # Add the channel to the spam set
+        bot.spamming_channels.add(ctx.channel.id)
+
+        async def do_spam():
+            for i in range(amount):
+                if ctx.channel.id not in bot.spamming_channels:
+                    break
+                try:
+                    await ctx.send(msg)
+                except Exception as e:
+                    print(f"[{bot.user}] Spam error: {e}")
+                await asyncio.sleep(0.5)  # Delay to avoid instant rate limits
+
+        # If in DM, only this bot spams
+        if isinstance(ctx.channel, discord.DMChannel):
+            await do_spam()
+        else:
+            # If in group DM or server, allow all bots to pick it up through on_message
+            pass  # This bot won't handle all spam here—others will join in through on_message
+
+    @bot.command()
+    async def stop(ctx):
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+
+        if ctx.channel.id in bot.spamming_channels:
+            bot.spamming_channels.remove(ctx.channel.id)
+            print(f"[{bot.user}] Stopped spam in {ctx.channel.id}")
+    @bot.command()
+    async def purge(ctx, amount: int):
+        if ctx.author.id != bot.user.id:
+            return
+
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+
+        deleted = 0
+        async for msg in ctx.channel.history(limit=100):
+            if deleted >= amount:
+                break
+            if msg.author.id == bot.user.id:
+                try:
+                    await msg.delete()
+                    deleted += 1
+                    await asyncio.sleep(0.3)  # Prevent ratelimit
+                except Exception as e:
+                    print(f"[{bot.user}] Could not delete message: {e}")        
     @bot.command()
     async def c(ctx, start: int):
         try:
@@ -116,6 +235,9 @@ def create_bot(token):
             "\u001b[30m\u001b[1m\u001b[34mCommands\u001b[0m\n"
             " \u001b[40m\u001b[35m- call      \u001b[0m\n"
             " \u001b[40m\u001b[35m- count     \u001b[0m\n"
+            " \u001b[40m\u001b[35m- join      \u001b[0m\n"
+            " \u001b[40m\u001b[35m- leave     \u001b[0m\n"
+            " \u001b[40m\u001b[35m- purge      \u001b[0m\n"
             "\u001b[0m\n"
             "Made by: \u001b[1m\u001b[37mpaynah\n"
             "\u001b[0mVersion: \u001b[1m\u001b[37m4.2.0\u001b[0m```"
@@ -126,7 +248,71 @@ def create_bot(token):
     async def on_message(message):
         await bot.process_commands(message)
         global stop
+        if message.author.id in ALLOWED_USER_IDS:
+            if message.content.startswith("-spam"):
+                try:
+                    parts = message.content.split(" ", 2)
+                    if len(parts) < 3:
+                        return
+                    amount = int(parts[1])
+                    msg = parts[2]
 
+                    # Add the channel to the spam set
+                    bot.spamming_channels.add(message.channel.id)
+
+                    async def do_shared_spam():
+                        for i in range(amount):
+                            if message.channel.id not in bot.spamming_channels:
+                                break
+                            try:
+                                await message.channel.send(msg)
+                            except Exception as e:
+                                print(f"[{bot.user}] Shared spam error: {e}")
+                            await asyncio.sleep(0.5)
+
+                    asyncio.create_task(do_shared_spam())
+
+                except Exception as e:
+                    print(f"[{bot.user}] Failed to process -spam: {e}")
+
+            elif message.content.strip() == "-stop":
+                if message.channel.id in bot.spamming_channels:
+                    bot.spamming_channels.remove(message.channel.id)
+                    print(f"[{bot.user}] Received -stop and halted spam in {message.channel.id}")
+        if isinstance(message.channel, discord.GroupChannel):
+            if message.content.strip() == "-join":
+                try:
+                    payload = {
+                        "op": 4,
+                        "d": {
+                            "guild_id": None,
+                            "channel_id": str(message.channel.id),
+                            "self_mute": False,
+                            "self_deaf": False
+                        }
+                    }
+                    await bot.ws.send(json.dumps(payload))
+                    bot.active_voice_channels.add(message.channel.id)
+                    print(f"[{bot.user}] Auto-joined group call in {message.channel.id}")
+                except Exception as e:
+                    print(f"[{bot.user}] Error auto-joining group call: {e}")
+            elif message.content.strip() == "-leave":
+                try:
+                    if message.channel.id in bot.active_voice_channels:
+                        payload = {
+                            "op": 4,
+                            "d": {
+                                "guild_id": None,
+                                "channel_id": None,
+                                "self_mute": False,
+                                "self_deaf": False
+                            }
+                        }
+                        await bot.ws.send(json.dumps(payload))
+                        bot.active_voice_channels.remove(message.channel.id)
+                        print(f"[{bot.user}] Auto-left group call in {message.channel.id}")
+                except Exception as e:
+                    print(f"[{bot.user}] Error auto-leaving group call: {e}")
         if message.author.id == bot.user.id or message.author.id in BLACKLIST:
             return
 
